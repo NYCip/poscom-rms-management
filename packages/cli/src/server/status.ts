@@ -59,7 +59,7 @@ export async function getSystemStatus(): Promise<SystemStatus> {
     timestamp: new Date().toISOString(),
   };
 
-  if (status.memory.percentage > 90 || status.cpu[0] > 10) {
+  if (status.memory.percentage > 90 || (status.cpu[0] ?? 0) > 10) {
     status.status = 'degraded';
   }
 

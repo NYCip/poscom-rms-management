@@ -5,6 +5,8 @@ import { join } from 'path';
 import jwt from 'jsonwebtoken';
 import type { UserManager } from '../auth/index.js';
 import { getAllTasks } from './spec-parser.js';
+import { logEmitter, type LogEntry } from './logger.js';
+import { incrementConnections, decrementConnections } from './status.js';
 
 interface JWTPayload {
   username: string;
@@ -29,6 +31,11 @@ export function setupWebSocket(
   });
 
   const issuesDir = join(rmsDir, 'issues');
+
+  // Subscribe to log events and broadcast to all clients
+  logEmitter.on('log', (entry: LogEntry) => {
+    io.emit('log', entry);
+  });
 
   // Authentication middleware for Socket.IO
   io.use(async (socket, next) => {
@@ -77,6 +84,7 @@ export function setupWebSocket(
   io.on('connection', async (socket) => {
     const user = socket.data.user;
     console.log(`Client connected: ${socket.id} (user: ${user.username})`);
+    incrementConnections();
 
     // Send initial spec tasks on connection
     const tasks = await loadSpecTasks();
@@ -109,6 +117,7 @@ export function setupWebSocket(
 
     socket.on('disconnect', () => {
       console.log(`Client disconnected: ${socket.id} (user: ${user.username})`);
+      decrementConnections();
     });
   });
 

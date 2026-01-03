@@ -7,6 +7,8 @@ import crypto from 'crypto';
 import { registerApiRoutes } from './api.js';
 import { setupWebSocket } from './websocket.js';
 import { UserManager, setupAuth, registerAuthRoutes } from '../auth/index.js';
+import { registerStatusRoutes } from './status.js';
+import { streamLogger } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -70,6 +72,9 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // Register protected API routes
   registerApiRoutes(fastify, rmsDir);
+
+  // Register status routes (health, logs, system info)
+  registerStatusRoutes(fastify);
 
   // Serve static dashboard files
   const dashboardPath = join(__dirname, '..', '..', '..', 'dashboard', 'dist');
@@ -167,6 +172,9 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // Setup WebSocket with auth
   setupWebSocket(fastify.server, rmsDir, jwtSecret, userManager);
+
+  streamLogger.info('Server started successfully', { address, port: options.port });
+  streamLogger.info('Dashboard available', { url: address });
 
   console.log(`
 ╔═══════════════════════════════════════════════════════════════╗

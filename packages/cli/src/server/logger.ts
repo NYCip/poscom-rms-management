@@ -41,9 +41,9 @@ function log(level: string, msg: string, extra?: Record<string, unknown>) {
   logEmitter.emit('log', entry);
 
   // Console output with color
-  const color = LEVELS[level] || LEVELS.reset;
+  const color = LEVELS[level] || LEVELS['reset'];
   const timestamp = new Date(entry.time).toISOString();
-  console.log(`${color}[${timestamp}] [${level.toUpperCase()}]${LEVELS.reset} ${msg}`, extra ? JSON.stringify(extra) : '');
+  console.log(`${color}[${timestamp}] [${level.toUpperCase()}]${LEVELS['reset']} ${msg}`, extra ? JSON.stringify(extra) : '');
 }
 
 export const streamLogger = {
