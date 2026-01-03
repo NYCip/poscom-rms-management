@@ -26,20 +26,21 @@ export function registerApiRoutes(fastify: FastifyInstance, rmsDir: string) {
     return { success: true, data: { id: request.params.id, content } };
   });
 
-  fastify.post<{ Body: { title: string; type?: string; priority?: string } }>('/api/issues', { preHandler: [fastify.authenticate] }, async (request) => {
+  fastify.post<{ Body: { title: string; type?: string; priority?: string; status?: string } }>('/api/issues', { preHandler: [fastify.authenticate] }, async (request) => {
     const id = `ISSUE-${Date.now()}`;
+    const status = request.body.status || 'backlog';
     const content = `---
 id: ${id}
 type: ${request.body.type || 'feature'}
 priority: ${request.body.priority || 'medium'}
-status: draft
+status: ${status}
 created: ${new Date().toISOString()}
 ---
 
 # ${request.body.title}
 `;
     await writeFile(join(issuesDir, `${id}.md`), content);
-    return { success: true, data: { id } };
+    return { success: true, data: { id, title: request.body.title, status, priority: request.body.priority || 'medium' } };
   });
 
   fastify.delete<{ Params: { id: string } }>('/api/issues/:id', { preHandler: [fastify.authenticate] }, async (request) => {

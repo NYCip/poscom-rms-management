@@ -38,7 +38,9 @@ export const useWebSocket = () => {
       console.log('Disconnected from WebSocket:', reason);
     });
 
-    socketRef.current.on('issues:init', (issues) => setIssues(issues));
+    socketRef.current.on('issues:init', (issues) => {
+      setIssues(issues);
+    });
     socketRef.current.on('issue:updated', ({ id, updates }) => updateIssue(id, updates));
 
     return () => {

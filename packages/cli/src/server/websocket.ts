@@ -4,6 +4,7 @@ import { readdir, readFile } from 'fs/promises';
 import { join } from 'path';
 import jwt from 'jsonwebtoken';
 import type { UserManager } from '../auth/index.js';
+import { getAllTasks } from './spec-parser.js';
 
 interface JWTPayload {
   username: string;
@@ -58,9 +59,28 @@ export function setupWebSocket(
     }
   });
 
-  io.on('connection', (socket) => {
+  // Helper to load spec tasks from .claude/specs/
+  async function loadSpecTasks() {
+    try {
+      // Use current working directory as project root
+      const projectDir = process.cwd();
+      console.log('Loading spec tasks from:', projectDir);
+      const tasks = await getAllTasks(projectDir);
+      console.log('Loaded', tasks.length, 'tasks');
+      return tasks;
+    } catch (err) {
+      console.error('Error loading spec tasks:', err);
+      return [];
+    }
+  }
+
+  io.on('connection', async (socket) => {
     const user = socket.data.user;
     console.log(`Client connected: ${socket.id} (user: ${user.username})`);
+
+    // Send initial spec tasks on connection
+    const tasks = await loadSpecTasks();
+    socket.emit('issues:init', tasks);
 
     socket.on('command', async (data: { command: string; payload?: unknown }) => {
       if (!ALLOWED_COMMANDS.includes(data.command)) {
