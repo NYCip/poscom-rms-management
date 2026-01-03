@@ -1,7 +1,20 @@
 import type { FastifyInstance } from 'fastify';
 import { readdir, readFile, writeFile, unlink } from 'fs/promises';
-import { join } from 'path';
+import { join, resolve } from 'path';
 import { getAllTasks, loadSpecs } from './spec-parser.js';
+
+// Security: Validate IDs to prevent path traversal
+function isValidId(id: string): boolean {
+  // Only allow alphanumeric, hyphens, underscores, and dots
+  return /^[a-zA-Z0-9._-]+$/.test(id) && !id.includes('..');
+}
+
+// Security: Ensure path is within allowed directory
+function isPathWithinDir(filePath: string, allowedDir: string): boolean {
+  const resolvedPath = resolve(filePath);
+  const resolvedDir = resolve(allowedDir);
+  return resolvedPath.startsWith(resolvedDir + '/') || resolvedPath === resolvedDir;
+}
 
 export function registerApiRoutes(fastify: FastifyInstance, rmsDir: string) {
   const issuesDir = join(rmsDir, 'issues');
@@ -22,9 +35,23 @@ export function registerApiRoutes(fastify: FastifyInstance, rmsDir: string) {
     return { success: true, data: issues };
   });
 
-  fastify.get<{ Params: { id: string } }>('/api/issues/:id', { preHandler: [fastify.authenticate] }, async (request) => {
-    const content = await readFile(join(issuesDir, `${request.params.id}.md`), 'utf-8');
-    return { success: true, data: { id: request.params.id, content } };
+  fastify.get<{ Params: { id: string } }>('/api/issues/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params;
+
+    // Security: Validate ID
+    if (!isValidId(id)) {
+      return reply.status(400).send({ success: false, error: 'Invalid issue ID' });
+    }
+
+    const filePath = join(issuesDir, `${id}.md`);
+
+    // Security: Ensure path is within issues directory
+    if (!isPathWithinDir(filePath, issuesDir)) {
+      return reply.status(403).send({ success: false, error: 'Access denied' });
+    }
+
+    const content = await readFile(filePath, 'utf-8');
+    return { success: true, data: { id, content } };
   });
 
   fastify.post<{ Body: { title: string; type?: string; priority?: string; status?: string } }>('/api/issues', { preHandler: [fastify.authenticate] }, async (request) => {
@@ -44,8 +71,22 @@ created: ${new Date().toISOString()}
     return { success: true, data: { id, title: request.body.title, status, priority: request.body.priority || 'medium' } };
   });
 
-  fastify.delete<{ Params: { id: string } }>('/api/issues/:id', { preHandler: [fastify.authenticate] }, async (request) => {
-    await unlink(join(issuesDir, `${request.params.id}.md`));
+  fastify.delete<{ Params: { id: string } }>('/api/issues/:id', { preHandler: [fastify.authenticate] }, async (request, reply) => {
+    const { id } = request.params;
+
+    // Security: Validate ID
+    if (!isValidId(id)) {
+      return reply.status(400).send({ success: false, error: 'Invalid issue ID' });
+    }
+
+    const filePath = join(issuesDir, `${id}.md`);
+
+    // Security: Ensure path is within issues directory
+    if (!isPathWithinDir(filePath, issuesDir)) {
+      return reply.status(403).send({ success: false, error: 'Access denied' });
+    }
+
+    await unlink(filePath);
     return { success: true };
   });
 
@@ -91,9 +132,20 @@ created: ${new Date().toISOString()}
   fastify.patch<{ Params: { taskId: string }; Body: { status: string } }>(
     '/api/tasks/:taskId/status',
     { preHandler: [fastify.authenticate] },
-    async (request) => {
+    async (request, reply) => {
       const { taskId } = request.params;
       const { status } = request.body;
+
+      // Security: Validate taskId
+      if (!isValidId(taskId)) {
+        return reply.status(400).send({ success: false, error: 'Invalid task ID' });
+      }
+
+      // Validate status
+      const validStatuses = ['backlog', 'todo', 'in_progress', 'review', 'done'];
+      if (!validStatuses.includes(status)) {
+        return reply.status(400).send({ success: false, error: 'Invalid status' });
+      }
 
       // For now, return success - actual file update would need tasks.md editing
       return {
@@ -133,6 +185,12 @@ created: ${new Date().toISOString()}
     { preHandler: [fastify.authenticate] },
     async (request, reply) => {
       const { taskId } = request.params;
+
+      // Security: Validate taskId
+      if (!isValidId(taskId)) {
+        return reply.status(400).send({ success: false, error: 'Invalid task ID' });
+      }
+
       const tasks = await getAllTasks(process.cwd());
       const task = tasks.find(t => t.id === taskId);
 
