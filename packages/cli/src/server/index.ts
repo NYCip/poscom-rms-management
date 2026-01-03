@@ -160,12 +160,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
     });
   }
 
-  // Health check (public)
-  fastify.get('/health', async () => ({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    authenticated: false,
-  }));
+  // Note: /health route is registered in status.ts via registerStatusRoutes()
 
   // Start server
   const address = await fastify.listen({ port: options.port, host: options.host });
