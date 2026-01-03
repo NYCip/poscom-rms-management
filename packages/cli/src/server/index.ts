@@ -1,10 +1,15 @@
 import Fastify from 'fastify';
-import { join } from 'path';
+import fastifyStatic from '@fastify/static';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { access, mkdir } from 'fs/promises';
 import crypto from 'crypto';
 import { registerApiRoutes } from './api.js';
 import { setupWebSocket } from './websocket.js';
 import { UserManager, setupAuth, registerAuthRoutes } from '../auth/index.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 interface ServerOptions {
   port: number;
@@ -65,6 +70,90 @@ export async function startServer(options: ServerOptions): Promise<void> {
 
   // Register protected API routes
   registerApiRoutes(fastify, rmsDir);
+
+  // Serve static dashboard files
+  const dashboardPath = join(__dirname, '..', '..', '..', 'dashboard', 'dist');
+  try {
+    await access(dashboardPath);
+    await fastify.register(fastifyStatic, {
+      root: dashboardPath,
+      prefix: '/',
+    });
+  } catch {
+    // Dashboard not built, serve simple HTML
+    fastify.get('/', async (_request, reply) => {
+      reply.type('text/html').send(`
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RMS Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+    .container { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.1); max-width: 400px; width: 90%; }
+    h1 { color: #1f2937; margin-bottom: 1rem; }
+    .status { color: #059669; font-weight: 600; }
+    .info { color: #6b7280; margin: 1rem 0; }
+    .endpoint { background: #f3f4f6; padding: 0.5rem 1rem; border-radius: 0.5rem; font-family: monospace; margin: 0.5rem 0; }
+    form { margin-top: 1.5rem; }
+    input { width: 100%; padding: 0.75rem; border: 1px solid #d1d5db; border-radius: 0.5rem; margin-bottom: 0.75rem; }
+    button { width: 100%; padding: 0.75rem; background: #2563eb; color: white; border: none; border-radius: 0.5rem; cursor: pointer; font-weight: 600; }
+    button:hover { background: #1d4ed8; }
+    .error { color: #dc2626; margin-top: 0.5rem; display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔒 RMS Dashboard</h1>
+    <p class="status">Server Running</p>
+    <p class="info">API Endpoints:</p>
+    <div class="endpoint">POST /api/auth/login</div>
+    <div class="endpoint">GET /api/issues</div>
+    <div class="endpoint">GET /health</div>
+
+    <form id="loginForm">
+      <input type="text" id="username" placeholder="Username" value="admin" required>
+      <input type="password" id="password" placeholder="Password" required>
+      <button type="submit">Login</button>
+      <p class="error" id="error"></p>
+    </form>
+    <p class="info" style="margin-top:1rem;font-size:0.875rem;">Default: admin / Admin123!</p>
+  </div>
+  <script>
+    document.getElementById('loginForm').onsubmit = async (e) => {
+      e.preventDefault();
+      const error = document.getElementById('error');
+      error.style.display = 'none';
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            username: document.getElementById('username').value,
+            password: document.getElementById('password').value
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          alert('Login successful! Token: ' + data.data.token.substring(0, 20) + '...');
+          localStorage.setItem('rms_token', data.data.token);
+        } else {
+          error.textContent = data.error;
+          error.style.display = 'block';
+        }
+      } catch (err) {
+        error.textContent = 'Network error';
+        error.style.display = 'block';
+      }
+    };
+  </script>
+</body>
+</html>
+      `);
+    });
+  }
 
   // Health check (public)
   fastify.get('/health', async () => ({

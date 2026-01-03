@@ -19,7 +19,8 @@ interface AuthState {
   clearError: () => void;
 }
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000';
+// Use relative URLs by default - works with any host/port
+const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export const useAuthStore = create<AuthState>()(
   devtools(

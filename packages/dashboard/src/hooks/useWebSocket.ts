@@ -3,7 +3,8 @@ import { io, Socket } from 'socket.io-client';
 import { useIssueStore } from '@/stores/issue.store';
 import { useAuthStore } from '@/stores/auth.store';
 
-const WS_URL = import.meta.env.VITE_WS_URL || 'http://localhost:4000';
+// Use current origin for WebSocket - works with any host/port
+const WS_URL = import.meta.env.VITE_WS_URL || window.location.origin;
 
 export const useWebSocket = () => {
   const socketRef = useRef<Socket | null>(null);
