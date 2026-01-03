@@ -1,0 +1,62 @@
+# ============================================
+# POS.com RMS - Docker Compose Configuration
+# ============================================
+
+version: '3.8'
+
+services:
+  rms:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: poscom-rms
+    restart: unless-stopped
+    ports:
+      - "${PORT:-4000}:4000"
+    environment:
+      - NODE_ENV=production
+      - JWT_SECRET=${JWT_SECRET}
+      - RMS_ADMIN_PASSWORD=${RMS_ADMIN_PASSWORD:-ChangeMe123!}
+      - CORS_ORIGIN=${CORS_ORIGIN:-}
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    volumes:
+      - rms-data:/app/.rms
+    networks:
+      - rms-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    security_opt:
+      - no-new-privileges:true
+    read_only: true
+    tmpfs:
+      - /tmp
+
+  # Optional: Nginx reverse proxy for SSL termination
+  nginx:
+    image: nginx:alpine
+    container_name: poscom-rms-proxy
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - rms
+    networks:
+      - rms-network
+    profiles:
+      - with-proxy
+
+volumes:
+  rms-data:
+    driver: local
+
+networks:
+  rms-network:
+    driver: bridge

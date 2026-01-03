@@ -1,0 +1,19 @@
+{
+  "name": "@pos.com/testing",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@pos.com/core": "workspace:*",
+    "@pos.com/data": "workspace:*"
+  },
+  "devDependencies": {
+    "vitest": "^1.2.0",
+    "typescript": "^5.3.3"
+  }
+}

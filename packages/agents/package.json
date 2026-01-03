@@ -1,0 +1,27 @@
+{
+  "name": "@pos.com/agents",
+  "version": "0.1.0",
+  "description": "AI agent system for RMS workflow orchestration",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@pos.com/core": "workspace:*",
+    "@pos.com/data": "workspace:*",
+    "eventemitter3": "^5.0.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}
