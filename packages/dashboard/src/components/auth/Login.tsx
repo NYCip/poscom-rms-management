@@ -17,7 +17,7 @@ export default function Login() {
       <div className="max-w-md w-full space-y-8 p-8 bg-white rounded-xl shadow-lg">
         <div>
           <h2 className="text-center text-3xl font-extrabold text-gray-900">
-            RMS Dashboard
+            POS.com RMS
           </h2>
           <p className="mt-2 text-center text-sm text-gray-600">
             Sign in to your account
@@ -91,7 +91,7 @@ export default function Login() {
         </form>
 
         <div className="mt-4 text-center text-xs text-gray-500">
-          <p>Default credentials: admin / admin123!</p>
+          <p>Default credentials: admin / Admin123!</p>
           <p className="text-red-500 font-medium mt-1">Change password after first login!</p>
         </div>
       </div>

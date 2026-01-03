@@ -106,7 +106,7 @@ export async function startServer(options: ServerOptions): Promise<void> {
 </head>
 <body>
   <div class="container">
-    <h1>🔒 RMS Dashboard</h1>
+    <h1>🔒 POS.com RMS</h1>
     <p class="status">Server Running</p>
     <p class="info">API Endpoints:</p>
     <div class="endpoint">POST /api/auth/login</div>
