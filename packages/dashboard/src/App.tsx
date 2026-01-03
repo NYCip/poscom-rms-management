@@ -22,17 +22,40 @@ function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      <header className="bg-white border-b px-4 py-4">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">RMS Dashboard</h1>
+      <header className="sticky top-0 z-50 bg-gradient-to-r from-blue-600 to-blue-800 text-white shadow-lg px-6 py-4">
+        <div className="flex items-center justify-between max-w-full">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-md">
+              <span className="text-xl font-bold text-blue-600">📊</span>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold tracking-tight">POS.com RMS</h1>
+              <p className="text-xs text-blue-200">Requirements Management System</p>
+            </div>
+          </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-gray-600">
-              {user?.username} ({user?.role})
-            </span>
+            <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm px-3 py-2 rounded-lg">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-sm font-semibold">
+                {user?.username?.charAt(0).toUpperCase()}
+              </div>
+              <div className="text-sm">
+                <div className="font-medium">{user?.username}</div>
+                <div className={`text-xs px-2 py-0.5 rounded-full inline-block ${
+                  user?.role === 'admin' ? 'bg-purple-500 text-white' :
+                  user?.role === 'user' ? 'bg-blue-500 text-white' :
+                  'bg-gray-400 text-white'
+                }`}>
+                  {user?.role}
+                </div>
+              </div>
+            </div>
             <button
               onClick={logout}
-              className="px-3 py-1 text-sm bg-gray-200 hover:bg-gray-300 rounded-md transition-colors"
+              className="px-4 py-2 text-sm bg-white/20 hover:bg-white/30 rounded-lg transition-colors flex items-center gap-2"
             >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
               Logout
             </button>
           </div>
