@@ -1,5 +1,7 @@
 import Fastify from 'fastify';
 import fastifyStatic from '@fastify/static';
+import fastifyRateLimit from '@fastify/rate-limit';
+import fastifyHelmet from '@fastify/helmet';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { access, mkdir } from 'fs/promises';
@@ -62,6 +64,46 @@ export async function startServer(options: ServerOptions): Promise<void> {
       ? process.env['CORS_ORIGIN'] || false
       : true,
     credentials: true,
+  });
+
+  // Security headers with Helmet
+  await fastify.register(fastifyHelmet, {
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'self'"],
+        scriptSrc: ["'self'", "'unsafe-inline'"], // Required for inline scripts
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        imgSrc: ["'self'", 'data:', 'blob:'],
+        connectSrc: ["'self'", 'wss:', 'ws:'],
+        fontSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        mediaSrc: ["'self'"],
+        frameSrc: ["'none'"],
+      },
+    },
+    crossOriginEmbedderPolicy: false, // Allow embedding for dashboard
+  });
+
+  // Global rate limiting
+  await fastify.register(fastifyRateLimit, {
+    max: 100, // Max 100 requests per window
+    timeWindow: '1 minute',
+    errorResponseBuilder: () => ({
+      success: false,
+      error: 'Too many requests. Please slow down.',
+      statusCode: 429,
+    }),
+  });
+
+  // Stricter rate limit for auth endpoints (applied in auth routes)
+  fastify.decorate('authRateLimit', {
+    max: 5, // Max 5 login attempts per window
+    timeWindow: '15 minutes',
+    errorResponseBuilder: () => ({
+      success: false,
+      error: 'Too many login attempts. Please try again in 15 minutes.',
+      statusCode: 429,
+    }),
   });
 
   // Setup authentication
